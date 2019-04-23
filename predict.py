@@ -4,6 +4,8 @@ import tqdm
 import os 
 import subprocess
 import pandas as pd 
+from io import StringIO
+import io
 
 import pickle
 
@@ -82,7 +84,36 @@ with open('detector.pkl', 'rb') as f:
 
 
 
-		
+# df = pd.read_csv('./output_folder/capture-output.pcap_Flow.csv')	
+import time
+from optparse import OptionParser
+
+SLEEP_INTERVAL = 1.0
+
+def readlines_then_tail(fin):
+    "Iterate through lines and then tail for further lines."
+    while True:
+        line = fin.readline()
+        if line:
+            yield line
+        else:
+            tail(fin)
+
+def tail(fin):
+    "Listen for new lines added to file."
+    while True:
+        where = fin.tell()
+        line = fin.readline()
+        if not line:
+            time.sleep(SLEEP_INTERVAL)
+            fin.seek(where)
+        else:
+            yield line
+            
+def main():
+    with open('./output_folder/capture-output.pcap_Flow.csv', 'r') as fin:
+        for line in readlines_then_tail(fin):
+            print (line.strip())
 
 
 i=0
@@ -90,32 +121,37 @@ i=0
 while True:
 
     try:
-        chunk = pd.read_csv('./output_folder/capture-output.pcap_Flow.csv').tail(1)
-   
-
         
 
-        chunk.drop(columns_to_drop,axis=1,inplace=True)
-        print(chunk)
-        chunk.columns = columns
-        chunk = process_data(chunk)
-
-        #     print(chunk.columns)
-        new_chunk = chunk.copy()
-
-        new_chunk['anomality'] = detector.decision_function(chunk.drop(['Label'],axis=1))
-
-
-        result = model.predict(new_chunk.drop(['Label'],axis=1))
-        print(i)
+        
+        df= pd.read_csv('./output_folder/capture-output.pcap_Flow.csv')
+        print(df.columns)
+        
         i=i+1
-        if result == 1:
-            print(new_chunk['Destination Port'])
-            print('DETECTED',datetime.datetime.now())
+        print(i)
+        
+
+        # chunk.drop(columns_to_drop,axis=1,inplace=True)
+        # print(chunk)
+        # chunk.columns = columns
+        # chunk = process_data(chunk)
+
+        # #     print(chunk.columns)
+        # new_chunk = chunk.copy()
+
+        # new_chunk['anomality'] = detector.decision_function(chunk.drop(['Label'],axis=1))
+
+
+        # result = model.predict(new_chunk.drop(['Label'],axis=1))
+        
+        
+        # if result == 1:
+        #     print(new_chunk['Destination Port'])
+        #     print('DETECTED',datetime.datetime.now())
         
         
     except Exception as e:
-    # print(e)
+        # print(e)
         print('\rwaiting for new connections',end='')
         pass
 

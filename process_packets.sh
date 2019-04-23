@@ -45,7 +45,8 @@ keypress=''
 while [ "x$keypress" = "x" ]; do
   let count+=1
   echo -ne $count'\r'
-  ./cfm ~/diploma/input_folder ~/diploma/output_folder
+  sleep 5
+  ./cfm ~/diploma/input_folder ~/dipl oma/output_folder
   keypress="`cat -v`"
 done
 

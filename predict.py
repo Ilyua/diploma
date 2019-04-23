@@ -77,16 +77,16 @@ def process_data(df):
             return 1
 
     df['Label'] = df['Label'].apply(f)
-    
+    # df = pd.to_numeric(df)
     df['isInfFB'] = df['Flow Bytes/s'].apply(f)
 
     df['isInfFP'] = df['Flow Packets/s'].apply(f)
 
-    m = 10000#pd.to_numeric(df.loc[df['Flow Bytes/s'] != "Infinity", 'Flow Bytes/s']).max()
-    df['Flow Bytes/s'].replace("Infinity",m,inplace=True)
+    # m = pd.to_numeric(df.loc[df['Flow Bytes/s'] != "Infinity", 'Flow Bytes/s']).max()
+    # df['Flow Bytes/s'].replace("Infinity",m,inplace=True)
 
-#     m = pd.to_numeric(df.loc[df['Flow Packets/s'] != "Infinity", 'Flow Packets/s']).max()
-    df['Flow Packets/s'].replace("Infinity",m,inplace=True)
+    # m = pd.to_numeric(df.loc[df['Flow Packets/s'] != "Infinity", 'Flow Packets/s']).max()
+    # df['Flow Packets/s'].replace("Infinity",m,inplace=True)
 
     df['Flow Bytes/s'] = pd.to_numeric(df['Flow Bytes/s'])
     df['Flow Packets/s'] = pd.to_numeric(df['Flow Packets/s'])
@@ -107,65 +107,67 @@ with open('detector.pkl', 'rb') as f:
 
 
 # df = pd.read_csv('./output_folder/capture-output.pcap_Flow.csv')	
-import time
-from optparse import OptionParser
+# import time
+# from optparse import OptionParser
 
-SLEEP_INTERVAL = 1.0
+# SLEEP_INTERVAL = 1.0
 
-def readlines_then_tail(fin):
-    "Iterate through lines and then tail for further lines."
-    while True:
-        line = fin.readline()
-        if line:
-            yield line
-        else:
-            tail(fin)
+# def readlines_then_tail(fin):
+#     "Iterate through lines and then tail for further lines."
+#     while True:
+#         line = fin.readline()
+#         if line:
+#             # yield line
+#             pass
+#         else:
+#             tail(fin)
 
-def tail(fin):
-    "Listen for new lines added to file."
-    while True:
-        where = fin.tell()
-        line = fin.readline()
-        if not line:
-            time.sleep(SLEEP_INTERVAL)
-            fin.seek(where)
-        else:
-            yield line
+# def tail(fin):
+#     "Listen for new lines added to file."
+#     while True:
+#         where = fin.tell()
+#         line = fin.readline()
+#         if not line:
+#             time.sleep(SLEEP_INTERVAL)
+#             fin.seek(where)
+#         else:
+#             yield line
 
-def main():
-    with open('./output_folder/capture-output.pcap_Flow.csv', 'r') as fin:
-        for i,line in enumerate(readlines_then_tail(fin)):
+# def main():
+#     while True:
+#         with open('file', 'r') as fin:
+#             for i,line in enumerate(readlines_then_tail(fin)):
             
             
-            if i==0:
-                continue
-            print('FLOW ',i)
-            # print(line)
-            chunk = pd.read_csv(StringIO(line),header=None)
-            # print(chunk)
-            chunk.columns = initial_columns
+#             # if i==0:
+#             #     continue
+#                 print('FLOW ',i)
+#                 print(line)
+            # chunk = pd.read_csv(StringIO(line),header=None)
+            # # print(chunk)
+            # chunk.columns = initial_columns
 
-            chunk.drop(columns_to_drop,axis=1,inplace=True)
-            # print(chunk)
-            chunk.columns = columns
-            chunk = process_data(chunk)
+            # chunk.drop(columns_to_drop,axis=1,inplace=True)
+            # # print(chunk)
+            # chunk.columns = columns
+            # chunk = process_data(chunk)
 
-            #     print(chunk.columns)
-            new_chunk = chunk.copy()
-            # print(new_chunk)
-            new_chunk['anomality'] = detector.decision_function(chunk.drop(['Label'],axis=1))
+            # #     print(chunk.columns)
+            # new_chunk = chunk.copy()
+            # # print(new_chunk)
+            # new_chunk['anomality'] = detector.decision_function(chunk.drop(['Label'],axis=1))
 
-            # print(1)
+            # # print(1)
 
-            result = model.predict(new_chunk.drop(['Label'],axis=1))
-            # print(2)
+            # result = model.predict(new_chunk.drop(['Label'],axis=1))
+            # # print(2)
 
-            if result == 1:
-               print(new_chunk['Destination Port'])
-               print('DETECTED',datetime.datetime.now())
+            # if result == 1:
+            #    print(new_chunk['Destination Port'])
+            #    print('DETECTED',datetime.datetime.now())
             
 
-main()
+# main()
 # df = pd.read_csv('./output_folder/capture-output.pcap_Flow.csv')
 # print(df.columns)
 
@@ -201,12 +203,40 @@ main()
 #         print('\rwaiting for new connections',end='')
 #         pass
 
+n_chunk = 1
+while True:
+    print(n_chunk)
+    try:
+        df = pd.read_csv('./output_folder/capture-output.pcap_Flow.csv',chunksize=1)
+
+        chunk = df.get_chunk(n_chunk)
+    except Exception as e:
+        pass
+    n_chunk=n_chunk+1
+    # print(chunk)
 
 
+    chunk.columns = initial_columns
 
+    chunk.drop(columns_to_drop,axis=1,inplace=True)
+    # print(chunk)
+    chunk.columns = columns
+    chunk = process_data(chunk)
 
+    #     print(chunk.columns)
+    new_chunk = chunk.copy()
+    
+    new_chunk['anomality'] = detector.decision_function(chunk.drop(['Label'],axis=1))
 
+    # print(1)
+    print(new_chunk.drop(['Label'],axis=1))
 
+    result = model.predict(new_chunk.drop(['Label'],axis=1))
+    # print(2)
+    print(result)
+    if result == 1:
+        print(new_chunk['Destination Port'])
+        print('DETECTED',datetime.datetime.now())
 
 
 
